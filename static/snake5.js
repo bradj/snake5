@@ -82,6 +82,7 @@ function snake5(dom) {
   this.height = 48;
   this.objects = [];
   this.grid = [];
+  this.frame = 0;
   for (var x=0; x<this.width; x++) {
     this.grid[x] = [];
     for (var y=0; y<this.height; y++) {
@@ -101,6 +102,7 @@ snake5.prototype.remove = function(obj) {
 };
 
 snake5.prototype.tick = function() {
+  this.frame++;
   U.foreach(this.objects, function(obj) {
     obj.tick();
   }, this);
@@ -126,7 +128,7 @@ snake5.prototype.eat = function(snake, food) {
 snake5.prototype.render = function() {
   var ctx = this.dom.getContext('2d');
   ctx.clearRect(0, 0, this.dom.width, this.dom.height);
-  
+
   ctx.save();
   ctx.translate(0.1, 0.1);
   ctx.scale(10, -10);
@@ -150,8 +152,62 @@ snake5.prototype.render = function() {
 
 };
 
+function server5(game, player) {
+  this.game = game;
+  this.player = player;
+  game.add(this);
+  this.connect();
+};
+
+server5.prototype.connect = function() {
+  this.socket = new WebSocket('ws://' + window.location.host + '/socket');
+  var t = this;
+  this.socket.onopen    = function(e) { t.onopen(e);      };
+  this.socket.onclose   = function(e) { t.onclose(e);     };
+  this.socket.onerror   = function(e) { t.onerror(e);     };
+  this.socket.onmessage = function(e) { t.onmessage(e);   };
+ };
+
+server5.prototype.close = function() {
+  this.socket.close();
+  this.socket = null;
+};
+
+server5.prototype.onopen = function(e) {
+  console.log(e);
+};
+
+server5.prototype.onclose = function(e) {
+  console.log(e);
+};
+
+server5.prototype.onerror = function(e) {
+  console.log(e);
+};
+
+server5.prototype.onmessage = function(e) {
+  console.log(e);
+  data = JSON.parse(e.data);
+  for (var i=0; i<data.points.length; i++) {
+    var point = data.points[i];
+    var x = point[0];
+    var y = point[1];
+    var i = point[2];
+    this.game.grid[x][y] = i;
+  }
+};
+
+server5.prototype.tick = function() {
+  data = {
+    tick: this.game.tick,
+    tail: this.player.tail
+  };
+  this.socket.send(JSON.stringify(data));
+};
+
 var game = new snake5(one('.game canvas').dom);
 var player1 = new snake(game, 40, 24, 1, 0);
+var server = new server5(game, player1);
 
 
 one(document.body).onkeydown(function(e) {
@@ -173,15 +229,14 @@ one(document.body).onkeydown(function(e) {
         player1.vx = 1;
         player1.vy = 0;
         break;
-    default:  
+    default:
         break;
   }
 });
 
 
 
-
-window.setInterval(function () { game.tick(); }, (6 * 1000/60));
+window.setInterval(function () { game.tick(); }, (60 * 1000/60));
 
 
 
