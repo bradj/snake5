@@ -61,6 +61,14 @@ snake.prototype.tick = function() {
 
 snake.prototype.die = function() {
   this.status = snake.DEAD;
+
+  if (confirm('DEAD! Restart?')) this.reset();
+};
+
+snake.prototype.reset = function() {
+  this.x = 40;
+  this.y = 24;
+  this.status = snake.ALIVE;
 };
 
 snake.prototype.remove = function() {
@@ -72,6 +80,10 @@ snake.prototype.remove = function() {
   this.status = null;
   this.tail = null;
   this.game = null;
+};
+
+snake.prototype.setDeathHandler = function(callback) {
+  this.deathEmitter = callback;
 };
 
 
@@ -209,7 +221,6 @@ var game = new snake5(one('.game canvas').dom);
 var player1 = new snake(game, 40, 24, 1, 0);
 var server = new server5(game, player1);
 
-
 one(document.body).onkeydown(function(e) {
   console.log(e);
   switch (e.which) {
@@ -234,10 +245,4 @@ one(document.body).onkeydown(function(e) {
   }
 });
 
-
-
 window.setInterval(function () { game.tick(); }, (60 * 1000/60));
-
-
-
-
